@@ -8,9 +8,10 @@ import time
 import requests
 from links import links
 import random
+import re
 
 GOOLSBALL_TEXT = " You shake the Magic Goolsball aaaand..."
-
+GOOLSBALL_USERNAME ="@MagicGoolsbee"
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
@@ -27,20 +28,27 @@ def get_random_image():
 def check_mentions(api, since_id):
     logger.info("Retrieving mentions")
     new_since_id = since_id
-    for tweet in tweepy.Cursor(api.mentions_timeline, since_id=since_id).items():
+    for tweet in tweepy.Cursor(api.mentions_timeline, since_id=since_id, tweet_mode="extended").items():
         new_since_id = max(tweet.id, new_since_id)
-        #if tweet.in_reply_to_status_id is not None:
-        #    continue
+        if tweet.in_reply_to_status_id is None:
+            logger.info("Answering to " + tweet.user.screen_name)
+            logger.info("Tweet Text " + tweet.full_text)
+            image = get_image(api, get_random_image())
+            api.update_status(
+                status="@" + tweet.user.screen_name + GOOLSBALL_TEXT,
+                in_reply_to_status_id=tweet.id, media_ids=[image.media_id_string]
+            )
+        else:
+            test_string=re.sub(GOOLSBALL_USERNAME, "", tweet.full_text, count=1)
+            if GOOLSBALL_USERNAME in test_string:
 
-        logger.info("Answering to " + tweet.user.screen_name)
-
-        # if not tweet.user.following:
-        #   tweet.user.follow()
-        image = get_image(api, get_random_image())
-        api.update_status(
-            status="@" + tweet.user.screen_name + GOOLSBALL_TEXT,
-            in_reply_to_status_id=tweet.id, media_ids=[image.media_id_string]
-        )
+                logger.info("Answering to " + tweet.user.screen_name)
+                logger.info("Tweet Text " + tweet.full_text)
+                image = get_image(api, get_random_image())
+                api.update_status(
+                    status="@" + tweet.user.screen_name + GOOLSBALL_TEXT,
+                    in_reply_to_status_id=tweet.id, media_ids=[image.media_id_string]
+                )
     return new_since_id
 
 
@@ -60,11 +68,13 @@ def get_image(api, url):
 
 def main():
     api = create_api()
-    since_id = 1
+    tweet = tweepy.Cursor(api.mentions_timeline).items().next()
+    since_id=tweet.id  # type: object
+    logger.info("SinceID = " + str(since_id))
     while True:
         since_id = check_mentions(api, since_id)
         logger.info("Waiting...")
-        time.sleep(30)
+        time.sleep(60)
 
 
 if __name__ == "__main__":
