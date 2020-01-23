@@ -1,3 +1,1 @@
-requests==latest
-re==latest
 tweepy==3.8.0

@@ -11,16 +11,16 @@ import random
 import re
 
 GOOLSBALL_TEXT = " You shake the Magic Goolsball aaaand..."
-GOOLSBALL_USERNAME ="@MagicGoolsbee"
+GOOLSBALL_USERNAME = "@MagicGoolsbee"
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
 
 
 def get_random_image():
-    rand=random.randint(0, 71)
+    rand = random.randint(0, 71)
     logger.info("Random number = " + str(rand))
-    url=links[rand]
+    url = links[rand]
     logger.info("Random URL is " + url)
     return url
 
@@ -30,7 +30,7 @@ def check_mentions(api, since_id):
     new_since_id = since_id
     for tweet in tweepy.Cursor(api.mentions_timeline, since_id=since_id, tweet_mode="extended").items():
         new_since_id = max(tweet.id, new_since_id)
-        if tweet.in_reply_to_status_id is None:
+        if tweet.in_reply_to_status_id is None:  # Respond to top level tweets
             logger.info("Answering to " + tweet.user.screen_name)
             logger.info("Tweet Text " + tweet.full_text)
             image = get_image(api, get_random_image())
@@ -38,10 +38,11 @@ def check_mentions(api, since_id):
                 status="@" + tweet.user.screen_name + GOOLSBALL_TEXT,
                 in_reply_to_status_id=tweet.id, media_ids=[image.media_id_string]
             )
-        else:
-            test_string=re.sub(GOOLSBALL_USERNAME, "", tweet.full_text, count=1)
+        else:  # respond to reply tweets
+            # strips the first mention out of the reply as that is not in the main test
+            test_string = re.sub(GOOLSBALL_USERNAME, "", tweet.full_text, count=1)
+            # if a second mention occurs that means its in the main text and should be responded to
             if GOOLSBALL_USERNAME in test_string:
-
                 logger.info("Answering to " + tweet.user.screen_name)
                 logger.info("Tweet Text " + tweet.full_text)
                 image = get_image(api, get_random_image())
@@ -69,7 +70,7 @@ def get_image(api, url):
 def main():
     api = create_api()
     tweet = tweepy.Cursor(api.mentions_timeline).items().next()
-    since_id=tweet.id  # type: object
+    since_id = tweet.id
     logger.info("SinceID = " + str(since_id))
     while True:
         since_id = check_mentions(api, since_id)
