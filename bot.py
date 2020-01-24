@@ -39,12 +39,18 @@ def check_mentions(api, since_id):
                 in_reply_to_status_id=tweet.id, media_ids=[image.media_id_string]
             )
         else:  # respond to reply tweets
-            # strips the first mention out of the reply as that is not in the main test
-            test_string = re.sub(GOOLSBALL_USERNAME, "", tweet.full_text, count=1)
+
+            test_string = tweet.full_text.split(" ", 1)
+            test_string2= tweet.full_text
+            logger.info("test string 1= " + test_string[0] + " "+ test_string[1])
+            logger.info("test string 2= " + test_string2)
+            if test_string[0] == GOOLSBALL_USERNAME:
+                test_string2 = test_string[1]
+            logger.info("after if test string 2= " + test_string2)
             # if a second mention occurs that means its in the main text and should be responded to
-            if GOOLSBALL_USERNAME in test_string:
+            if GOOLSBALL_USERNAME in test_string2:
                 logger.info("Answering to " + tweet.user.screen_name)
-                logger.info("Tweet Text " + tweet.full_text)
+                logger.info("Tweet Text " + test_string2)
                 image = get_image(api, get_random_image())
                 api.update_status(
                     status="@" + tweet.user.screen_name + GOOLSBALL_TEXT,
@@ -69,8 +75,9 @@ def get_image(api, url):
 
 def main():
     api = create_api()
+    count=0
     tweet = tweepy.Cursor(api.mentions_timeline).items().next()
-    since_id = tweet.id
+    since_id=tweet.id
     logger.info("SinceID = " + str(since_id))
     while True:
         since_id = check_mentions(api, since_id)
